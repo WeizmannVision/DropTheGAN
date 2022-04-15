@@ -14,7 +14,7 @@ from image import imread, imwrite, imshow
 from fold import fold2d, unfold2d
 from nnlookup import nn_lookup2d, nn_lookup_soft2d, l2_dist
 from utils import view_as_2d, view_2d_as
-from Resizer import Resizer
+from resize_right import Resizer
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

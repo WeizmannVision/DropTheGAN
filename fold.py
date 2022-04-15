@@ -1,19 +1,32 @@
+from typing import Tuple, Union
+
 import torch
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
-
 __all__ = ['unfold2d', 'fold2d']
 
 
-def unfold2d(input, kernel_size, stride=1, use_padding=True):
-    # input dimensions (4D): n, c, h, w
-    # kernel: kh, kw
-    # output dimensions (6D): n, c, kh, kw, h', w'
-    # output can be viewed as: n, c * kh * kw, h' * w'
-    if input.dim() != 4:
+def unfold2d(image: torch.Tensor,
+             kernel_size: Union[int, Tuple[int, int]],
+             stride: Union[int, Tuple[int, int]] = 1,
+             use_padding: bool = False) -> torch.Tensor:
+    """Unfolds an image into patches.
+    
+    Args:
+        image: A batch of images of shape (N, C ,H, W) to unfold.
+        kernel_size: The size of each patch: (kH, kW).
+        stride: The stride between patches: (sH, sW).
+        use_padding: Whether to pad the image such that each pixels appears in
+            exactly the same number of patches.
+
+    Returns:
+        An unfolded image of shape (N, C, kH, kW, H', W'). Not contiguous, but
+        can be viewed as (N, C * kH * kW, H' * W').
+    """
+    if image.dim() != 4:
         raise ValueError('expects a 4D tensor as input')
-    n, c, h, w = input.size()
+    n, c, h, w = image.size()
     kh, kw = kernel_size = _pair(kernel_size)
     sh, sw = stride = _pair(stride)
     if use_padding:
@@ -21,14 +34,12 @@ def unfold2d(input, kernel_size, stride=1, use_padding=True):
     else:
         ph, pw = padding = (0, 0)
     oh, ow = (h + 2 * ph - kh) // sh + 1, (w + 2 * pw - kw) // sw + 1
-    # input = F.pad(input, pad=(pw, pw, ph, ph), mode='replicate')  # XXX: diff
-    # output = F.unfold(input, kernel_size, stride=stride, padding=0)
-    output = F.unfold(input, kernel_size, stride=stride, padding=padding)
+    output = F.unfold(image, kernel_size, stride=stride, padding=padding)
     output = output.view(n, c, kh, kw, oh, ow)
     return output
 
 
-def fold2d(input, stride=1, use_padding=True, *, reduce='sum', std=1.7):  # noqa
+def fold2d(input, stride=1, use_padding=False, *, reduce='sum', std=1.7):
     # input dimensions (6D): n, c, kh, kw, h', w'
     # output dimensions (4D): n, c, h, w
     if input.dim() != 6:
@@ -73,10 +84,15 @@ def _fold2d_sum(input, stride, use_padding):
         ph, pw = padding = (kh - sh, kw - sh)
     else:
         ph, pw = padding = (0, 0)
-    oh, ow = output_size = (sh * (h - 1) + kh - 2 * ph, sw * (w - 1) + kw - 2 * pw)  # noqa
+    oh, ow = output_size = (sh * (h - 1) + kh - 2 * ph,
+                            sw * (w - 1) + kw - 2 * pw)
     kernel_size = (kh, kw)
     input = input.reshape(n, c * kh * kw, h * w)
-    output = F.fold(input, output_size, kernel_size, stride=stride, padding=padding)  # noqa
+    output = F.fold(input,
+                    output_size,
+                    kernel_size,
+                    stride=stride,
+                    padding=padding)
     return output
 
 
@@ -94,32 +110,46 @@ def _fold2d_median(input, stride, use_padding):
     if use_padding:
         ph, pw = (kh - sh, kw - sw)
         oh, ow = (sh * (h - 1) + kh - 2 * ph, sw * (w - 1) + kw - 2 * pw)
-        # output = input.new_full(size=(dh * dw, n, c, oh, ow), fill_value=float('nan'))  # XXX: debug  # noqa
         output = input.new_zeros(size=(dh * dw, n, c, oh, ow))
         for i in range(kh):
             for j in range(kw):
                 ii, jj = i // sh, j // sw
                 sii, sjj = (kh - i - 1) // sh, (kw - j - 1) // sw
-                output[ii * dw + jj, :, :, i % sh::sh, j % sw::sw] = input[:, :, i, j, sii:h - ii, sjj:w - jj]  # noqa
+                output[ii * dw + jj, :, :, i % sh::sh, j % sw::sw] = input[:, :, i, j, sii:h - ii, sjj:w - jj]  # yapf: disable
         output = torch.median(output, dim=0)[0]
 
     else:
         if not hasattr(torch, 'nanmedian'):
-            raise RuntimeError('fold2d_median with use_padding==False depends on torch.nanmedian()')  # noqa
-            # pass  # XXX: debug
+            raise RuntimeError(
+                'fold2d_median with use_padding==False depends on torch.nanmedian()'
+            )
         if sh != 1 or sw != 1:
-            raise NotImplementedError('fold2d_median with use_padding==False and stride!=1 is not implemented')  # noqa
+            raise NotImplementedError(
+                'fold2d_median with use_padding==False and stride!=1 is not implemented'
+            )
         oh, ow = (sh * (h - 1) + kh, sw * (w - 1) + kw)
-        output = input.new_full(size=(dh * dw, n, c, oh, ow), fill_value=float('nan'))  # noqa
-        # output = input.new_zeros(size=(dh * dw, n, c, oh, ow))  # XXX: debug
+        output = input.new_full(size=(dh * dw, n, c, oh, ow),
+                                fill_value=float('nan'))
         for i in range(kh):
             for j in range(kw):
                 ii, jj = i // sh, j // sw
-                output[ii * dw + jj, :, :, i:h + i:sh, j:w + j:sw] = input[:, :, i, j, :, :]  # noqa
+                output[ii * dw + jj, :, :, i:h + i:sh, j:w + j:sw] = input[:, :, i, j, :, :]  # yapf: disable
         output = torch.nanmedian(output, dim=0)[0]
-        # output = torch.median(output, dim=0)[0]  # XXX: debug
 
     return output
+
+
+def view_as_column(
+        unfloded_image: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, 6]]:
+    unfloded_image_size = n, c, kh, kw, h, w = unfloded_image.size()
+    unfolded_column = unfloded_image.view(n, c * kh * kw, h * w)
+    unfolded_column = unfolded_column.permute(0, 2, 1)
+    return unfolded_column, unfloded_image_size
+
+
+def view_as_image(unfolded_column: torch.Tensor,
+                  unfloded_image_size: Tuple[int, 6]) -> torch.Tensor:
+    return unfolded_column.permute(0, 2, 1).view(unfloded_image_size)
 
 
 def _get_weights_fold2d_mean(input, kh, kw):

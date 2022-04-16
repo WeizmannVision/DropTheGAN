@@ -4,7 +4,9 @@ import torch
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 
-__all__ = ['unfold2d', 'fold2d']
+__all__ = ['unfold2d', 'fold2d', 'view_as_column', 'view_as_image']
+
+_Size6D = Tuple[int, int, int, int, int, int]
 
 
 def unfold2d(image: torch.Tensor,
@@ -140,7 +142,7 @@ def _fold2d_median(input, stride, use_padding):
 
 
 def view_as_column(
-        unfloded_image: torch.Tensor) -> Tuple[torch.Tensor, Tuple[int, 6]]:
+        unfloded_image: torch.Tensor) -> Tuple[torch.Tensor, _Size6D]:
     unfloded_image_size = n, c, kh, kw, h, w = unfloded_image.size()
     unfolded_column = unfloded_image.view(n, c * kh * kw, h * w)
     unfolded_column = unfolded_column.permute(0, 2, 1)
@@ -148,7 +150,7 @@ def view_as_column(
 
 
 def view_as_image(unfolded_column: torch.Tensor,
-                  unfloded_image_size: Tuple[int, 6]) -> torch.Tensor:
+                  unfloded_image_size: _Size6D) -> torch.Tensor:
     return unfolded_column.permute(0, 2, 1).view(unfloded_image_size)
 
 

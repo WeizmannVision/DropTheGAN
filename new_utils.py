@@ -2,6 +2,7 @@ import math
 import os
 from typing import List, Tuple
 
+import numpy as np
 import PIL
 import torch
 
@@ -17,7 +18,8 @@ def to_numpy(tensor, clone=True):
 
 
 def imread(path: str) -> torch.Tensor:
-    image = torch.Tensor(PIL.Image.open(path), dtype=torch.float32)
+    image = PIL.Image.open(path).convert(mode='RGB')
+    image = torch.tensor(np.asarray(image), dtype=torch.float32)
     image = image.permute(2, 0, 1)
     return image / 255
 

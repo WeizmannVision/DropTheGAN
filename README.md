@@ -1,6 +1,9 @@
-# <center> Drop The GAN: <br /> In Defense of Patches Nearest Neighbors as Single Image Generative Models </center>
-## <center> <em> Accepted to CVPR 2022 (oral)  </em> </center>
-### <center> Niv Granot &ensp; Ben Feinstein &ensp; Assaf Shocher &ensp; Shai Bagon &ensp; Michal Irani </center>
+<h1 align="center"> Drop The GAN: <br /> In Defense of Patches Nearest Neighbors as Single Image Generative Models </h1>
+
+<div align="center"><font size="+1"><em>Accepted to CVPR 2022 (oral)</em></font></div>
+
+<div align="center">Niv Granot &ensp; Ben Feinstein &ensp; Assaf Shocher &ensp; Shai Bagon &ensp; Michal Irani</div>
+<br/>
 
 This is the official repository for "Drop The GAN: In Defense of Patches Nearest Neighbors as Single Image Generative Models" ([paper](https://arxiv.org/abs/2103.15545), [project page](https://www.wisdom.weizmann.ac.il/~vision/gpnn/)). 
  

@@ -55,7 +55,7 @@ def retargeting(input_path: str,
                 retargeting_ratio: Tuple[float, float],
                 alpha: float = 5e-3,
                 patch_size: int = 7,
-                downsacle_ratio: float = 0.75,
+                downsacle_ratio: float = 0.8,
                 num_levels: int = 8,
                 device: Optional[str] = None) -> None:
     """Retargt an image to different sizes.

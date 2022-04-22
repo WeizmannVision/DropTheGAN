@@ -92,7 +92,7 @@ def retargeting(image: torch.Tensor,
                 retargeting_ratio: Tuple[float, float],
                 alpha: float = 1e-3,
                 patch_size: int = 7,
-                downscale_ratio: float = 0.75,
+                downscale_ratio: float = 0.8,
                 num_levels: int = 9,
                 reduce: str = 'weighted_mean'):
     pyramid = gpnn.make_pyramid(image, num_levels, downscale_ratio)

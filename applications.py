@@ -9,30 +9,30 @@ import resize_right
 _INF = float('inf')
 
 
-def image_generation(image: torch.Tensor,
-                     noise_std: float = 0.75,
-                     alpha: float = _INF,
-                     patch_size: int = 7,
-                     pyramid_downscale_ratio: float = 0.75,
-                     pyramid_depth: int = 9,
-                     reduce: str = 'weighted_mean') -> torch.Tensor:
-    pyramid = gpnn.make_pyramid(image, pyramid_depth, pyramid_downscale_ratio)
+def generation(image: torch.Tensor,
+               noise_std: float = 0.75,
+               alpha: float = _INF,
+               patch_size: int = 7,
+               downscale_ratio: float = 0.75,
+               num_levels: int = 9,
+               reduce: str = 'weighted_mean') -> torch.Tensor:
+    pyramid = gpnn.make_pyramid(image, num_levels, downscale_ratio)
     initial_guess = pyramid[-1] + noise_std * torch.randn_like(pyramid[-1])
     return gpnn.gpnn(pyramid,
                      initial_guess,
                      alpha=alpha,
-                     downscale_ratio=pyramid_downscale_ratio,
+                     downscale_ratio=downscale_ratio,
                      patch_size=patch_size,
                      reduce=reduce)
 
 
-def image_editing(source_image: torch.Tensor,
-                  edited_image: torch.Tensor,
-                  alpha: float = _INF,
-                  patch_size: int = 7,
-                  downscale_ratio: float = 0.75,
-                  num_levels: int = 5,
-                  reduce: str = 'weighted_mean') -> torch.Tensor:
+def editing(source_image: torch.Tensor,
+            edited_image: torch.Tensor,
+            alpha: float = _INF,
+            patch_size: int = 7,
+            downscale_ratio: float = 0.75,
+            num_levels: int = 5,
+            reduce: str = 'weighted_mean') -> torch.Tensor:
     source_pyramid = gpnn.make_pyramid(source_image, num_levels,
                                        downscale_ratio)
     edited_pyramid = gpnn.make_pyramid(edited_image, num_levels,

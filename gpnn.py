@@ -5,7 +5,6 @@ import torch
 from torch.nn import functional as F
 
 import fold
-import image as image_utils
 import resize_right
 
 _MAX_MEMORY_SIZE = 1 << 30
@@ -28,13 +27,9 @@ def gpnn(pyramid: Sequence[torch.Tensor],
         mask_pyramid = [None] * len(pyramid)
     generated = initial_guess
     coarsest_level = len(pyramid) - 1
-    print(f'initial guess shape: {initial_guess.shape}')
-    image_utils.imshow(initial_guess)
     for level in range(coarsest_level, -1, -1):
-        print(f'level: {level}')
         if level == coarsest_level:
             for i in range(num_iters_in_coarsest_level):
-                print(f'corasest iteration: {i}')
                 generated = pnn(generated,
                                 key=pyramid[level],
                                 value=pyramid[level],
@@ -47,7 +42,6 @@ def gpnn(pyramid: Sequence[torch.Tensor],
                                           1 / downscale_ratio,
                                           pyramid[level].shape)
             for i in range(num_iters_in_level):
-                print(f'iteration: {i}')
                 generated = pnn(generated,
                                 key=blurred,
                                 value=pyramid[level],
@@ -55,8 +49,6 @@ def gpnn(pyramid: Sequence[torch.Tensor],
                                 patch_size=patch_size,
                                 alpha=alpha,
                                 reduce=reduce)
-        print(f'output shape: {generated.shape}')
-        image_utils.imshow(generated)
         if level > 0:
             generated = resize_right.resize(generated, 1 / downscale_ratio,
                                             output_pyramid_shape[level - 1])

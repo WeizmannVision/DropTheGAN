@@ -13,15 +13,15 @@ def image_generation(image: torch.Tensor,
                      noise_std: float = 0.75,
                      alpha: float = _INF,
                      patch_size: int = 7,
-                     downscale_ratio: float = 0.75,
-                     num_levels: int = 9,
+                     pyramid_downscale_ratio: float = 0.75,
+                     pyramid_depth: int = 9,
                      reduce: str = 'weighted_mean') -> torch.Tensor:
-    pyramid = gpnn.make_pyramid(image, num_levels, downscale_ratio)
+    pyramid = gpnn.make_pyramid(image, pyramid_depth, pyramid_downscale_ratio)
     initial_guess = pyramid[-1] + noise_std * torch.randn_like(pyramid[-1])
     return gpnn.gpnn(pyramid,
                      initial_guess,
                      alpha=alpha,
-                     downscale_ratio=downscale_ratio,
+                     downscale_ratio=pyramid_downscale_ratio,
                      patch_size=patch_size,
                      reduce=reduce)
 
